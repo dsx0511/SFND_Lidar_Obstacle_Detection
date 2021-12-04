@@ -18,7 +18,7 @@ pcl::visualization::PCLVisualizer::Ptr initScene(Box window, int zoom)
   	viewer->setCameraPosition(0, 0, zoom, 0, 1, 0);
   	viewer->addCoordinateSystem (1.0);
 
-  	viewer->addCube(window.x_min, window.x_max, window.y_min, window.y_max, 0, 0, 1, 1, 1, "window");
+  	viewer->addCube(window.x_min, window.x_max, window.y_min, window.y_max, 0, 0, 0.1, 0.1, 0.1, "window");
   	return viewer;
 }
 
@@ -75,13 +75,61 @@ void render2DTree(Node* node, pcl::visualization::PCLVisualizer::Ptr& viewer, Bo
 
 }
 
+/* 
+Proximity(point,cluster):
+    mark point as processed
+    add point to cluster
+    nearby points = tree(point)
+    Iterate through each nearby point
+        If point has not been processed
+            Proximity(cluster)
+
+EuclideanCluster():
+    list of clusters 
+    Iterate through each point
+        If point has not been processed
+            Create cluster
+            Proximity(point, cluster)
+            cluster add clusters
+    return clusters
+ */
+
+void proximity(const std::vector<std::vector<float>>& points, std::vector<bool>& processed, int index, std::vector<int>& cluster, KdTree* tree, float distanceTol)
+{
+	processed[index] = true;
+	cluster.push_back(index);
+
+	std::vector<int> nearbyPointIds = tree->search(points[index], distanceTol);
+	for(int nearbyPointId : nearbyPointIds)
+	{
+		if(!processed[nearbyPointId])
+		{
+			proximity(points, processed, nearbyPointId, cluster, tree, distanceTol);
+		}
+	}
+}
+
 std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol)
 {
 
 	// TODO: Fill out this function to return list of indices for each cluster
 
 	std::vector<std::vector<int>> clusters;
- 
+
+	std::vector<bool> processed;
+	for(int i = 0; i < points.size(); i++)
+		processed.push_back(false);
+	
+	for(int i = 0; i < points.size(); i++)
+	{
+		if(!processed[i])
+		{
+			std::vector<int> cluster;
+			proximity(points, processed, i, cluster, tree, distanceTol);
+			clusters.push_back(cluster);
+		}
+	}
+
 	return clusters;
 
 }
