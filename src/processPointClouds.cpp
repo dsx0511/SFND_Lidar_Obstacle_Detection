@@ -2,7 +2,6 @@
 
 #include "processPointClouds.h"
 
-
 //constructor:
 template<typename PointT>
 ProcessPointClouds<PointT>::ProcessPointClouds() {}
@@ -61,6 +60,107 @@ typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(ty
     std::cout << "filtering took " << elapsedTime.count() << " milliseconds" << std::endl;
 
     return cloud;
+
+}
+
+template<typename PointT>
+std::unordered_set<int> ProcessPointClouds<PointT>::RansacPlane(typename pcl::PointCloud<PointT>::Ptr cloud, int maxIterations, float distanceTol)
+{
+	std::unordered_set<int> inliersResult;
+	auto startTime = std::chrono::steady_clock::now();
+	
+	// TODO: Fill in this function
+
+	// For max iterations 
+	for (int i=0; i < maxIterations; i++)
+	{
+		// Randomly sample subset and fit line
+		std::unordered_set<int> inliers;
+		while(inliers.size() < 3)
+			inliers.insert(rand() % cloud->size());
+
+		PointT p1, p2, p3;
+
+		auto itr = inliers.begin();
+		p1 = cloud->points[*itr];
+		itr++;
+		p2 = cloud->points[*itr];
+		itr++;
+		p3 = cloud->points[*itr];
+
+		float A = (p2.y-p1.y)*(p3.z-p1.z)-(p2.z-p1.z)*(p3.y-p1.y);
+		float B = (p2.z-p1.z)*(p3.x-p1.x)-(p2.x-p1.x)*(p3.z-p1.z);
+		float C = (p2.x-p1.x)*(p3.y-p1.y)-(p2.y-p1.y)*(p3.x-p1.x);
+		float D = -(A*p1.x+B*p1.y+C*p1.z);
+
+		// Measure distance between every point and fitted line
+		for (int j=0; j < cloud->points.size(); j++)
+		{
+			if (inliers.count(j) > 0)
+				continue;
+
+			PointT point = cloud->points[j];
+			float d = fabs(A*point.x+B*point.y+C*point.z+D)/sqrt(A*A+B*B+C*C);
+
+			// If distance is smaller than threshold count it as inlier
+			if (d <= distanceTol) 
+				inliers.insert(j);
+		}
+
+		// Return indicies of inliers from fitted line with most inliers
+		if (inliers.size() > inliersResult.size())
+			inliersResult = inliers; 
+	}
+
+    auto endTime = std::chrono::steady_clock::now();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    std::cout << "RANSAC took " << elapsedTime.count() << " milliseconds" << std::endl;
+	
+	return inliersResult;
+
+}
+
+template<typename PointT>
+void ProcessPointClouds<PointT>::proximity(const std::vector<std::vector<float>>& points, std::vector<bool>& processed, int index, std::vector<int>& cluster, KdTree3d* tree, float distanceTol)
+{
+	processed[index] = true;
+	cluster.push_back(index);
+
+	std::vector<int> nearbyPointIds = tree->search(points[index], distanceTol);
+	for(int nearbyPointId : nearbyPointIds)
+	{
+		if(!processed[nearbyPointId])
+		{
+			proximity(points, processed, nearbyPointId, cluster, tree, distanceTol);
+		}
+	}
+}
+
+template<typename PointT>
+std::vector<std::vector<int>> ProcessPointClouds<PointT>::euclideanCluster(const std::vector<std::vector<float>>& points, KdTree3d* tree, float distanceTol, int minSize)
+{
+
+	// TODO: Fill out this function to return list of indices for each cluster
+
+	std::vector<std::vector<int>> clusters;
+
+	std::vector<bool> processed;
+	for(int i = 0; i < points.size(); i++)
+		processed.push_back(false);
+	
+	for(int i = 0; i < points.size(); i++)
+	{
+		if(!processed[i])
+		{
+			std::vector<int> cluster;
+			proximity(points, processed, i, cluster, tree, distanceTol);
+
+            if(cluster.size() > minSize)
+			    clusters.push_back(cluster);
+		}
+	}
+
+	return clusters;
 
 }
 

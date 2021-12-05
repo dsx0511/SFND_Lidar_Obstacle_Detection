@@ -111,6 +111,67 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer, ProcessPointCloud
     }
 }
 
+void cityBlock2(pcl::visualization::PCLVisualizer::Ptr& viewer, ProcessPointClouds<pcl::PointXYZI>* pointProcessorI, const pcl::PointCloud<pcl::PointXYZI>::Ptr& inputCloud)
+{
+    pcl::PointCloud<pcl::PointXYZI>::Ptr filteredCloud = pointProcessorI->FilterCloud(inputCloud, 0.2, Eigen::Vector4f(-20, -5, -2, 1), Eigen::Vector4f(50, 7, 5, 1));
+
+    std::unordered_set<int> inliersIndices = pointProcessorI->RansacPlane(filteredCloud, 100, 0.2);
+
+    pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+    for(int index : inliersIndices)
+        inliers->indices.push_back(index);
+
+    std::pair<pcl::PointCloud<pcl::PointXYZI>::Ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr> segmentCloud = pointProcessorI->SeparateClouds(inliers, filteredCloud);
+
+    // renderPointCloud(viewer,segmentCloud.first,"obstCloud",Color(1,0,0));
+    renderPointCloud(viewer,segmentCloud.second,"planeCloud",Color(0,1,0));
+
+    std::vector<std::vector<float>> points;
+
+    KdTree3d* tree = new KdTree3d;
+    for(int i = 0; i < segmentCloud.first->points.size(); i++) {
+        std::vector<float> point;
+        point.push_back(segmentCloud.first->points[i].x);
+        point.push_back(segmentCloud.first->points[i].y);
+        point.push_back(segmentCloud.first->points[i].z);
+
+        points.push_back(point);
+        tree->insert(point, i);
+    }
+
+  	std::vector<std::vector<int>> clusters = pointProcessorI->euclideanCluster(points, tree, 0.5, 10);
+
+    std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> cloudClusters;
+    for(std::vector<int> cluster : clusters)
+    {
+        pcl::PointCloud<pcl::PointXYZI>::Ptr clusterCloud(new pcl::PointCloud<pcl::PointXYZI>());
+        for(int indice: cluster)
+        {
+            pcl::PointXYZI clusterPoint;
+            clusterPoint.x = points[indice][0];
+            clusterPoint.y = points[indice][1];
+            clusterPoint.z = points[indice][2];
+            clusterPoint.intensity = 1.0f;
+  			clusterCloud->points.push_back(clusterPoint);
+        }
+        cloudClusters.push_back(clusterCloud);
+    }
+
+    int clusterId = 0;
+    std::vector<Color> colors = {Color(1,0,0), Color(1,1,0), Color(0,0,1)};
+
+    for(pcl::PointCloud<pcl::PointXYZI>::Ptr cluster : cloudClusters)
+    {
+        std::cout << "cluster size ";
+        pointProcessorI->numPoints(cluster);
+        renderPointCloud(viewer,cluster,"obstCloud"+std::to_string(clusterId),colors[clusterId % 3]);
+        ++clusterId;
+
+        Box box = pointProcessorI->BoundingBox(cluster);
+        renderBox(viewer,box,clusterId);
+    }
+}
+
 
 //setAngle: SWITCH CAMERA ANGLE {XY, TopDown, Side, FPS}
 void initCamera(CameraAngle setAngle, pcl::visualization::PCLVisualizer::Ptr& viewer)
@@ -159,7 +220,7 @@ int main (int argc, char** argv)
 
         // Load pcd and run obstacle detection process
         inputCloudI = pointProcessorI->loadPcd((*streamIterator).string());
-        cityBlock(viewer, pointProcessorI, inputCloudI);
+        cityBlock2(viewer, pointProcessorI, inputCloudI);
 
         streamIterator++;
         if(streamIterator == stream.end())

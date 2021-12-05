@@ -97,6 +97,80 @@ struct KdTree
 
 };
 
+struct KdTree3d
+{
+	Node* root;
+
+	KdTree3d()
+	: root(NULL)
+	{}
+
+	~KdTree3d()
+	{
+		delete root;
+	}
+
+	void insertNode(Node *&node, std::vector<float> point, int id, int level)
+	{
+		if(node == NULL)
+		{
+			node = new Node(point, id);
+		}
+		else if(point[level % 3] < node->point[level % 3])
+		{
+			insertNode(node->left, point, id, level+1);
+		}
+		else
+		{
+			insertNode(node->right, point, id, level+1);
+		}
+	}
+
+	void insert(std::vector<float> point, int id)
+	{
+		// TODO: Fill in this function to insert a new point into the tree
+		// the function should create a new node and place correctly with in the root 
+		insertNode(root, point, id, 0);
+	}
+
+	void searchNode(Node *node, std::vector<float> target, float distanceTol, std::vector<int> &ids, int level)
+	{
+		if(node != NULL)
+		{
+			std::vector<float> distance;
+			distance.push_back(target[0] - node->point[0]);
+			distance.push_back(target[1] - node->point[1]);
+			distance.push_back(target[2] - node->point[2]);
+
+			if((fabs(distance[0]) <= distanceTol) && (fabs(distance[1]) <= distanceTol) && (fabs(distance[2]) <= distanceTol))
+			{
+				float eucDistance = sqrt(pow(distance[0], 2) + pow(distance[1], 2) + pow(distance[2], 2));
+				if(eucDistance < distanceTol)
+					ids.push_back(node->id);
+			}
+
+			if(distance[level % 3] <= distanceTol)
+			{
+				searchNode(node->left, target, distanceTol, ids, level+1);
+			}
+			if(distance[level % 3] > -distanceTol)
+			{
+				searchNode(node->right, target, distanceTol, ids, level+1);
+			}
+		}
+	}
+
+	// return a list of point ids in the tree that are within distance of target
+	std::vector<int> search(std::vector<float> target, float distanceTol)
+	{
+		std::vector<int> ids;
+		searchNode(root, target, distanceTol, ids, 0);
+
+		return ids;
+	}
+	
+
+};
 
 
 
