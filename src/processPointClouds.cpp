@@ -121,7 +121,7 @@ std::unordered_set<int> ProcessPointClouds<PointT>::RansacPlane(typename pcl::Po
 }
 
 template<typename PointT>
-void ProcessPointClouds<PointT>::proximity(const std::vector<std::vector<float>>& points, std::vector<bool>& processed, int index, std::vector<int>& cluster, KdTree3d* tree, float distanceTol)
+void ProcessPointClouds<PointT>::proximity(const std::vector<std::vector<float>>& points, std::vector<bool>& processed, int index, std::vector<int>& cluster, KdTree* tree, float distanceTol)
 {
 	processed[index] = true;
 	cluster.push_back(index);
@@ -137,17 +137,18 @@ void ProcessPointClouds<PointT>::proximity(const std::vector<std::vector<float>>
 }
 
 template<typename PointT>
-std::vector<std::vector<int>> ProcessPointClouds<PointT>::euclideanCluster(const std::vector<std::vector<float>>& points, KdTree3d* tree, float distanceTol, int minSize)
+std::vector<std::vector<int>> ProcessPointClouds<PointT>::euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol, int minSize)
 {
 
 	// TODO: Fill out this function to return list of indices for each cluster
 
 	std::vector<std::vector<int>> clusters;
 
-	std::vector<bool> processed;
-	for(int i = 0; i < points.size(); i++)
-		processed.push_back(false);
-	
+	// std::vector<bool> processed;
+	// for(int i = 0; i < points.size(); i++)
+	// 	processed.push_back(false);
+    std::vector<bool> processed(points.size(), false);
+
 	for(int i = 0; i < points.size(); i++)
 	{
 		if(!processed[i])

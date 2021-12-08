@@ -23,6 +23,80 @@ struct Node
 	}
 };
 
+// struct KdTree
+// {
+// 	Node* root;
+
+// 	KdTree()
+// 	: root(NULL)
+// 	{}
+
+// 	~KdTree()
+// 	{
+// 		delete root;
+// 	}
+
+// 	void insertNode(Node *&node, std::vector<float> point, int id, int level)
+// 	{
+// 		if(node == NULL)
+// 		{
+// 			node = new Node(point, id);
+// 		}
+// 		else if(point[level % 2] < node->point[level % 2])
+// 		{
+// 			insertNode(node->left, point, id, level+1);
+// 		}
+// 		else
+// 		{
+// 			insertNode(node->right, point, id, level+1);
+// 		}
+// 	}
+
+// 	void insert(std::vector<float> point, int id)
+// 	{
+// 		// TODO: Fill in this function to insert a new point into the tree
+// 		// the function should create a new node and place correctly with in the root 
+// 		insertNode(root, point, id, 0);
+// 	}
+
+// 	void searchNode(Node *node, std::vector<float> target, float distanceTol, std::vector<int> &ids, int level)
+// 	{
+// 		if(node != NULL)
+// 		{
+// 			std::vector<float> distance;
+// 			distance.push_back(target[0] - node->point[0]);
+// 			distance.push_back(target[1] - node->point[1]);
+
+// 			if((fabs(distance[0]) <= distanceTol) && (fabs(distance[1]) <= distanceTol))
+// 			{
+// 				float eucDistance = sqrt(pow(distance[0], 2) + pow(distance[1], 2));
+// 				if(eucDistance < distanceTol)
+// 					ids.push_back(node->id);
+// 			}
+
+// 			if(distance[level % 2] <= distanceTol)
+// 			{
+// 				searchNode(node->left, target, distanceTol, ids, level+1);
+// 			}
+// 			if(distance[level % 2] > -distanceTol)
+// 			{
+// 				searchNode(node->right, target, distanceTol, ids, level+1);
+// 			}
+// 		}
+// 	}
+
+// 	// return a list of point ids in the tree that are within distance of target
+// 	std::vector<int> search(std::vector<float> target, float distanceTol)
+// 	{
+// 		std::vector<int> ids;
+// 		searchNode(root, target, distanceTol, ids, 0);
+
+// 		return ids;
+// 	}
+	
+
+// };
+
 struct KdTree
 {
 	Node* root;
@@ -32,80 +106,6 @@ struct KdTree
 	{}
 
 	~KdTree()
-	{
-		delete root;
-	}
-
-	void insertNode(Node *&node, std::vector<float> point, int id, int level)
-	{
-		if(node == NULL)
-		{
-			node = new Node(point, id);
-		}
-		else if(point[level % 2] < node->point[level % 2])
-		{
-			insertNode(node->left, point, id, level+1);
-		}
-		else
-		{
-			insertNode(node->right, point, id, level+1);
-		}
-	}
-
-	void insert(std::vector<float> point, int id)
-	{
-		// TODO: Fill in this function to insert a new point into the tree
-		// the function should create a new node and place correctly with in the root 
-		insertNode(root, point, id, 0);
-	}
-
-	void searchNode(Node *node, std::vector<float> target, float distanceTol, std::vector<int> &ids, int level)
-	{
-		if(node != NULL)
-		{
-			std::vector<float> distance;
-			distance.push_back(target[0] - node->point[0]);
-			distance.push_back(target[1] - node->point[1]);
-
-			if((fabs(distance[0]) <= distanceTol) && (fabs(distance[1]) <= distanceTol))
-			{
-				float eucDistance = sqrt(pow(distance[0], 2) + pow(distance[1], 2));
-				if(eucDistance < distanceTol)
-					ids.push_back(node->id);
-			}
-
-			if(distance[level % 2] <= distanceTol)
-			{
-				searchNode(node->left, target, distanceTol, ids, level+1);
-			}
-			if(distance[level % 2] > -distanceTol)
-			{
-				searchNode(node->right, target, distanceTol, ids, level+1);
-			}
-		}
-	}
-
-	// return a list of point ids in the tree that are within distance of target
-	std::vector<int> search(std::vector<float> target, float distanceTol)
-	{
-		std::vector<int> ids;
-		searchNode(root, target, distanceTol, ids, 0);
-
-		return ids;
-	}
-	
-
-};
-
-struct KdTree3d
-{
-	Node* root;
-
-	KdTree3d()
-	: root(NULL)
-	{}
-
-	~KdTree3d()
 	{
 		delete root;
 	}
@@ -137,6 +137,10 @@ struct KdTree3d
 	{
 		if(node != NULL)
 		{
+			// To reviewer:
+			// I implemented the distance using vector instead of separate variables like x, y, z, 
+			// because I want to extract the corresponding distance using mod ´distance[level % 3]´ directly,
+			// Otherwise I have to implement an if-condition for x, y, z respectively.
 			std::vector<float> distance;
 			distance.push_back(target[0] - node->point[0]);
 			distance.push_back(target[1] - node->point[1]);
